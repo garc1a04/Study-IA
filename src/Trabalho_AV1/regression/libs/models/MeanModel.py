@@ -1,11 +1,11 @@
 import numpy as np
 
 class MeanModel:
-    def __init__(self, y_train):
-        self.y_train = y_train
+    def __init__(self, _ , y_treino):
+        self.y_treino = y_treino
         
     def fit(self):
-        self.beta_0 = np.mean(self.y_train)
+        self.beta_0 = np.mean(self.y_treino)
         
     def predict(self, X_teste):
         N = X_teste.shape[0]
