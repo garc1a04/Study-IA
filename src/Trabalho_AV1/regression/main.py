@@ -11,15 +11,29 @@ data = np.loadtxt(caminho_arquivo, delimiter='\t')
 x = data[:,0]
 y = data[:,1]
 
-plt.scatter(x, y)
+
+
+# Scatter ocupando topo
+plt.figure(figsize=(10,8))
+plt.subplot(2,2,(1,2))
+plt.scatter(x, y, edgecolors='k')
 plt.title("Gráfico de dispersão")
 plt.xlabel("Velocidade do vento")
 plt.ylabel("Potência gerada")
+
+plt.subplot(2,2,3)
+plt.hist(x, bins=30, edgecolor='black')
+plt.title("Histograma - Velocidade do vento")
+
+plt.subplot(2,2,4)
+plt.hist(y, bins=30, edgecolor='black')
+plt.title("Histograma - Potência gerada")
+
+plt.tight_layout()
 plt.show()
 
 X_data = x.reshape(-1,1)
 Y_data = y.reshape(-1,1)
-
 
 models = {
     "MQO": LinearRegression,
@@ -55,4 +69,41 @@ for model_name in results:
     
     print(f"{model_name:<10} {mean:>12.4f} {std:>12.4f} {min_val:>12.4f} {max_val:>12.4f}")
 
-bp = 1
+y_pred_mqo = LinearRegression(X_data, Y_data)
+y_pred_mean = MeanModel(X_data, Y_data)
+y_pred_mqo.fit()
+y_pred_mean.fit()
+
+
+plt.figure(figsize=(10,8))
+plt.subplot(2,1,1)
+
+plt.scatter(x, y, color='gray', edgecolors='black', label="Dados")
+plt.plot(x, y_pred_mqo.predict(X_data),linewidth=2.5,label="MQO",color='#1f77b4')
+plt.plot(x, y_pred_mean.predict(X_data), linewidth=2.5, linestyle="--", label="Média",color='#ff7f0e')
+plt.xlabel("Velocidade do vento")
+plt.ylabel("Potência gerada")
+plt.title("Ajuste dos modelos")
+plt.legend()
+
+plt.subplot(2,2,3)
+plt.boxplot([
+    results["MQO"]["mse"],
+    results["Mean"]["mse"]
+],
+labels=["MQO", "Média"])
+plt.yscale("log") 
+plt.title("MSE")
+plt.ylabel("Erro")
+
+plt.subplot(2,2,4)
+plt.boxplot([
+    results["MQO"]["r2"],
+    results["Mean"]["r2"]
+],
+labels=["MQO", "Média"])
+plt.title("R²")
+plt.ylabel("Coeficiente")
+
+plt.tight_layout()
+plt.show()
