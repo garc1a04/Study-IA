@@ -11,24 +11,28 @@ data = np.loadtxt(caminho_arquivo, delimiter='\t')
 x = data[:,0]
 y = data[:,1]
 
-
-
-# Scatter ocupando topo
 plt.figure(figsize=(10,8))
 plt.subplot(2,2,(1,2))
 plt.scatter(x, y, edgecolors='k')
-plt.title("Gráfico de dispersão")
-plt.xlabel("Velocidade do vento")
-plt.ylabel("Potência gerada")
+plt.title("Gráfico de dispersão", fontsize=18)
+plt.xlabel("Velocidade do vento", fontsize=18)
+plt.ylabel("Potência gerada", fontsize=18)
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
+
 
 plt.subplot(2,2,3)
 plt.hist(x, bins=30, edgecolor='black')
-plt.title("Histograma - Velocidade do vento")
+plt.title("Histograma - Velocidade do vento", fontsize=18)
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
 
 plt.subplot(2,2,4)
 plt.hist(y, bins=30, edgecolor='black')
 plt.title("Histograma - Potência gerada")
 
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
 plt.tight_layout()
 plt.show()
 
@@ -81,9 +85,9 @@ plt.subplot(2,1,1)
 plt.scatter(x, y, color='gray', edgecolors='black', label="Dados")
 plt.plot(x, y_pred_mqo.predict(X_data),linewidth=2.5,label="MQO",color='#1f77b4')
 plt.plot(x, y_pred_mean.predict(X_data), linewidth=2.5, linestyle="--", label="Média",color='#ff7f0e')
-plt.xlabel("Velocidade do vento")
-plt.ylabel("Potência gerada")
-plt.title("Ajuste dos modelos")
+plt.xlabel("Velocidade do vento", fontsize=18)
+plt.ylabel("Potência gerada", fontsize=18)
+plt.title("Ajuste dos modelos", fontsize=18)
 plt.legend()
 
 plt.subplot(2,2,3)
@@ -93,8 +97,10 @@ plt.boxplot([
 ],
 labels=["MQO", "Média"])
 plt.yscale("log") 
-plt.title("MSE")
-plt.ylabel("Erro")
+plt.title("MSE", fontsize=18)
+plt.ylabel("Erro", fontsize=18)
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
 
 plt.subplot(2,2,4)
 plt.boxplot([
@@ -104,6 +110,19 @@ plt.boxplot([
 labels=["MQO", "Média"])
 plt.title("R²")
 plt.ylabel("Coeficiente")
-
+plt.xticks(fontsize=18)
+plt.yticks(fontsize=18)
 plt.tight_layout()
 plt.show()
+
+"""
+Modelo             Mean          Std          Min          Max
+------------------------------------------------------------
+MQO              798.77       163.41       443.79      1313.17
+Mean           11137.68       608.45      9313.19     13172.48
+
+Modelo             Mean          Std          Min          Max
+------------------------------------------------------------
+MQO              0.9282       0.0134       0.8842       0.9588
+Mean            -0.0026       0.0035      -0.0333      -0.0000
+"""

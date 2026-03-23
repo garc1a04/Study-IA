@@ -30,7 +30,9 @@ X = np.empty((0, 2))
 Y = np.empty((0, C))
 
 for i,classe in enumerate(classes):
-    X_classe = data[data[:,-1]==classe, :-1]    
+    X_classe = data[data[:,-1]==classe, :-1]
+    print(X_classe)
+    
     plt.scatter(X_classe[:,0], X_classe[:,1], c=cores[i], label = nomes_classes[i],
                 edgecolors='k')
     X = np.vstack((
@@ -50,21 +52,14 @@ X = np.hstack((
 ))
 
 W_hat = np.linalg.inv(X.T@X)@X.T@Y
-
-x1 = np.linspace(-200,8000,1000)
-
+x1 = np.linspace(-200,5000)
 x2 = -W_hat[0,0]/W_hat[2,0] - W_hat[1,0]/W_hat[2,0]*x1
-
 plt.plot(x1,x2,c='k')
-
 x2 = -W_hat[0,1]/W_hat[2,1] - W_hat[1,1]/W_hat[2,1]*x1
-plt.plot(x1,x2,c='r')
-
+plt.plot(x1,x2,c='k')
 x2 = -W_hat[0,2]/W_hat[2,2] - W_hat[1,2]/W_hat[2,2]*x1
-plt.plot(x1,x2,c='b')
-
-
-x_novo = np.array([1, 1544, 1425]).reshape(1,3)
+plt.plot(x1,x2,c='k')
+x_novo = np.array([1, 878, 1858]).reshape(1,3)
 
 x1 = np.linspace(-200, 5000, 1000)
 X1, X2 = np.meshgrid(x1, x1)
@@ -75,15 +70,13 @@ X_plot = np.hstack((
     X2.flatten().reshape(X1.size,1)
 ))
 
+y_pred  = X_plot @ W_hat
+Y_discriminante = np.argmax(y_pred,axis=1)
+y_plot = Y_discriminante.reshape(X1.shape)
+
 bp = 1
-y_pred  = x_novo @ W_hat
-Y_discriminante = np.argmax(y_pred,axis=1).reshape((1,1))
-print(nomes_classes[Y_discriminante[0]])
-
-y_plot = X_plot.reshape(X1.shape)
-
 plt.contourf(X1, X2, y_plot, alpha=0.2, cmap='Set3')
-plt.scatter(x_novo[0,1], x_novo[0,2], marker='*')
+plt.scatter(829, 2032, marker='*')
 plt.xlim(-50,3800)
 plt.ylim(-50,4100)
 plt.legend()

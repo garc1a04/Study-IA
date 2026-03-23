@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from libs.models.ClassificationLinear import ClassificationLinear
 from libs.validation.RandomSubsampling import RandomSubsamplingValidation
 
-
 """
 Organiza os dados do arquivo em matrizes NumPy (X e Y).
 
@@ -91,13 +90,11 @@ valores no ponto 0,0.
 
 R: MQO irá sofrer com relação a esses dados, pois existem diversos valores no 0,0;Tendo assim um problema na decisão do bias, além da classe Sobrancelha levantada e Sorriso, possuem valores muitos pertos no dos eixos.
 """
-
-# plt.scatter(X[0,0],X[0,1])
-# plt.grid(True)
-# plt.xlim(-50,3800)
-# plt.ylim(-50,4100)
-# plt.legend()
-# plt.show()
+plt.grid(True)
+plt.xlim(-50,3800)
+plt.ylim(-50,4100)
+plt.legend()
+plt.show()
 
 """
 Implementação de modelos de classificação:
@@ -109,21 +106,35 @@ Implementação de modelos de classificação:
 
 classification_traditional = ClassificationLinear(X,Y)
 classification_traditional.fit()
-x1 = np.linspace(-100,8000,1000)
+x1 = np.linspace(-200, 5000, 1000)
 
+plt.figure()
+for i,classe in enumerate(classes):
+    X_data = data[data[:,-1]==classe, :-1]    
+    plt.scatter(X_data[:,0], X_data[:,1], c=cores[i], label = nomes_classes[i],
+                edgecolors='k')
+    
 for class_idx in range(classification_traditional.weigth_hat.shape[1]):
     x2 = classification_traditional.straight(class_idx, x1)
-    
-    print(x2);
     plt.plot(x1, x2, label=f'Class {class_idx}')
 
-plt.scatter(X[0,0],X[0,1])
+x1_plot, x2_plot = np.meshgrid(x1, x1)
+
+X_plot = np.hstack((
+    x1_plot.flatten().reshape(x1_plot.size,1),
+    x2_plot.flatten().reshape(x2_plot.size,1)
+))
+
+y_pred  = classification_traditional.predict(X_plot)
+Y_discriminante = np.argmax(y_pred,axis=1)
+y_plot = Y_discriminante.reshape(x1_plot.shape)
+
+plt.contourf(x1_plot, x2_plot, y_plot, alpha=0.4, cmap='Set3')
+plt.grid(True)
 plt.xlim(-100,3800)
 plt.ylim(-100,4100)
 plt.legend()
 plt.show()
-
-bp = 1
 
 """
 Executa a validação dos modelos via Monte Carlo (R=500).
@@ -166,7 +177,6 @@ for model_name in results:
     max_val = np.max(r2_values)
     
     print(f"{model_name:<10} {mean:>12.4f} {std:>12.4f} {min_val:>12.4f} {max_val:>12.4f}")
-bp = 1
 
 # W_hat = np.linalg.inv(X.T@X)@X.T@Y
 
