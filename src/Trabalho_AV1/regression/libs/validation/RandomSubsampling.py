@@ -17,7 +17,6 @@ class RandomSubsamplingValidation:
             self.results[name] = {"mse": [],"r2": []}
             
         for _ in range(self.R):
-            
             idx = np.random.permutation(N)
             X_embaralhado = np.copy(self.X)[idx, :]
             y_embaralhado = np.copy(self.y)[idx, :]
@@ -30,9 +29,17 @@ class RandomSubsamplingValidation:
 
             for name, model_class in self.models.items():
                 model = model_class(X_treino, y_treino)
+                
+                if name.__contains__("tiknov"):
+                    lamb = float(str.split(name, "tiknov λ =")[1])
+                    model.fit(lamb)
+                    y_pred = model.predict(X_teste)
+                    self.results[name]["mse"].append(mtcs.mse(y_teste, y_pred))
+                    self.results[name]["r2"].append(mtcs.r2(y_teste, y_pred))
+                    continue
+
                 model.fit()
                 y_pred = model.predict(X_teste)
-
                 self.results[name]["mse"].append(mtcs.mse(y_teste, y_pred))
                 self.results[name]["r2"].append(mtcs.r2(y_teste, y_pred))
 
