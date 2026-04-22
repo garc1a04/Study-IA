@@ -94,7 +94,7 @@ for name, model in models_plot.items():
         lamb = float(str.split(name, "tiknov λ =")[1])
         model.fit(lamb)
         continue
-        
+
     model.fit()
 
 plt.figure(figsize=(14, 10)) 

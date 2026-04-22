@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from libs.models.ClassificationLinear import ClassificationLinear
 from libs.validation.RandomSubsampling import RandomSubsamplingValidation
+from libs.validation.KFold import KFoldCrossValidationGaussiano
+from libs.models.ClassificationBayes import ClassificadorBayesIngenuo, ClassificadorGaussianoCovarianciasIguais, ClassificadorGaussianoRegularizado, ClassificadorGaussianoTradicional, ClassificadorGaussianoMatrizAgregada
 
 """
 Organiza os dados do arquivo em matrizes NumPy (X e Y).
@@ -55,6 +57,12 @@ for i,classe in enumerate(classes):
         Y, Y_data
     ))
 
+X_mqo = X
+Y_mqo = Y
+
+X_bayes = data[:, :-1]
+Y_bayes = data[:, -1]
+
 """
 N = 50000
 C = 5
@@ -97,44 +105,24 @@ plt.legend()
 plt.show()
 
 """
-Implementação de modelos de classificação:
-- MQO: Abordagem via Mínimos Quadrados. (feito).
-- Gaussianos: Versões Tradicional, Covariâncias Iguais e Matriz Agregada.
-- Regularização: Modelo de Friedman para matrizes de covariância.
-- Probabilístico: Naive Bayes (Independência condicional).
+Para o classicador gaussiano regularizado, ha a depend^encia da denic~ao de seu hiperpar^ametro .
+Solicita-se ent~ao que aplique a validac~ao cruzada chamada k􀀀fold cross validation, para identicar qual
+e o valor de  ideal dentre uma sequ^encia de diferentes . Neste caso, os valores a serem testados s~ao
+dados pela seguinte lista:
+ = f0; 0:001; 0:01; 0:1; 0:2; 0:3; 0:4; 0:5; 0:6; 0:7; 0:8; 0:9; 1g
+Para compor o resultado do valor de  ideal analise na validac~ao cruzada a acuracia do modelo regularizado
 """
 
-classification_traditional = ClassificationLinear(X,Y)
-classification_traditional.fit()
-x1 = np.linspace(-200, 5000, 1000)
+y_ajustado = Y_bayes.reshape(-1, 1)
+valores_lambda = [0, 0.001, 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+buscador = KFoldCrossValidationGaussiano(X=X_bayes, y=y_ajustado, lambdas=valores_lambda, k=5)
+melhor_lbd, acuracia_max, historico = buscador.run()
 
-plt.figure()
-for i,classe in enumerate(classes):
-    X_data = data[data[:,-1]==classe, :-1]    
-    plt.scatter(X_data[:,0], X_data[:,1], c=cores[i], label = nomes_classes[i],
-                edgecolors='k')
-    
-for class_idx in range(classification_traditional.weigth_hat.shape[1]):
-    x2 = classification_traditional.straight(class_idx, x1)
-    plt.plot(x1, x2, label=f'Class {class_idx}')
-
-x1_plot, x2_plot = np.meshgrid(x1, x1)
-
-X_plot = np.hstack((
-    x1_plot.flatten().reshape(x1_plot.size,1),
-    x2_plot.flatten().reshape(x2_plot.size,1)
-))
-
-y_pred  = classification_traditional.predict(X_plot)
-Y_discriminante = np.argmax(y_pred,axis=1)
-y_plot = Y_discriminante.reshape(x1_plot.shape)
-
-plt.contourf(x1_plot, x2_plot, y_plot, alpha=0.4, cmap='Set3')
-plt.grid(True)
-plt.xlim(-100,3800)
-plt.ylim(-100,4100)
-plt.legend()
-plt.show()
+print("-" * 50)
+print(f"RESULTADO FINAL:")
+print(f"O MELHOR valor de lambda (alpha) é: {melhor_lbd}")
+print(f"Acurácia média obtida com ele: {acuracia_max:.4f}")
+print("-" * 50)
 
 """
 Executa a validação dos modelos via Monte Carlo (R=500).
@@ -147,74 +135,113 @@ Para cada uma das 500 rodadas:
 
 models = {
     "MQO": ClassificationLinear,
+    "Gaussiano Tradicional (QDA)": ClassificadorGaussianoTradicional,
+    "Covariâncias Iguais (LDA)": ClassificadorGaussianoCovarianciasIguais,
+    "Matriz Agregada": ClassificadorGaussianoMatrizAgregada,
+    "Bayes Ingênuo (Naive Bayes)": ClassificadorBayesIngenuo,
+    "Gaussiano Regularizado (RDA)": ClassificadorGaussianoRegularizado
 }
 
-validator = RandomSubsamplingValidation(X, Y, models, R=500)
-results = validator.run()
+results = {}
 
-print("\n===== RESULTADOS (MSE) =====\n")
-print(f"{'Modelo':<10} {'Mean':>12} {'Std':>12} {'Min':>12} {'Max':>12}")
-print("-"*60)
+for nome_modelo, model in models.items():
+    if nome_modelo == "MQO":
+        validator = RandomSubsamplingValidation(X=X_mqo, y=Y_mqo, models={nome_modelo: model})
+    else:
+        validator = RandomSubsamplingValidation(X=X_bayes, y=y_ajustado, models={nome_modelo: model}, alpha=melhor_lbd)
+    results[nome_modelo] = validator.run()
 
-for model_name in results:
-    mse_values = results[model_name]["mse"]
-    mean = np.mean(mse_values)
-    std = np.std(mse_values)
-    min_val = np.min(mse_values)
-    max_val = np.max(mse_values)
-    print(f"{model_name:<10} {mean:>12.2f} {std:>12.2f} {min_val:>12.2f} {max_val:>12.2f}")
-
-
-print("\n===== RESULTADOS (R²) =====\n")
-print(f"{'Modelo':<10} {'Mean':>12} {'Std':>12} {'Min':>12} {'Max':>12}")
-print("-"*60)
+print("\n===== RESULTADOS (ACURÁCIA) =====\n")
+print(f"{'Modelo':<35} {'Mean':>12} {'Std':>12} {'Min':>12} {'Max':>12}")
+print("-" * 85)
 
 for model_name in results:
-    r2_values = results[model_name]["r2"]
-    mean = np.mean(r2_values)
-    std = np.std(r2_values)
-    min_val = np.min(r2_values)
-    max_val = np.max(r2_values)
-    
-    print(f"{model_name:<10} {mean:>12.4f} {std:>12.4f} {min_val:>12.4f} {max_val:>12.4f}")
-
-# W_hat = np.linalg.inv(X.T@X)@X.T@Y
-
-# x1 = np.linspace(-200,8000,1000)
-
-# x2 = -W_hat[0,0]/W_hat[2,0] - W_hat[1,0]/W_hat[2,0]*x1
-
-# plt.plot(x1,x2,c='k')
-
-# x2 = -W_hat[0,1]/W_hat[2,1] - W_hat[1,1]/W_hat[2,1]*x1
-# plt.plot(x1,x2,c='r')
-
-# x2 = -W_hat[0,2]/W_hat[2,2] - W_hat[1,2]/W_hat[2,2]*x1
-# plt.plot(x1,x2,c='b')
+    acc_values = results[model_name][model_name]["acuracia"] 
+    mean = np.mean(acc_values)
+    std = np.std(acc_values)
+    min_val = np.min(acc_values)
+    max_val = np.max(acc_values)
+    print(f"{model_name:<35} {mean:>12.4f} {std:>12.4f} {min_val:>12.4f} {max_val:>12.4f}")
 
 
-# x_novo = np.array([1, 1544, 1425]).reshape(1,3)
+x1 = np.linspace(-100, 3800, 300)
+x2 = np.linspace(-100, 4100, 300)
+x1_plot, x2_plot = np.meshgrid(x1, x2)
+X_plot = np.c_[x1_plot.ravel(), x2_plot.ravel()]
 
-# x1 = np.linspace(-200, 5000, 1000)
-# X1, X2 = np.meshgrid(x1, x1)
+modelos = {
+    "Gaussiano Tradicional (QDA)": ClassificadorGaussianoTradicional(X_bayes, Y_bayes),
+    "Covariâncias Iguais (LDA)": ClassificadorGaussianoCovarianciasIguais(X_bayes, Y_bayes),
+    "Matriz Agregada": ClassificadorGaussianoMatrizAgregada(X_bayes, Y_bayes),
+    "Gaussiano Regularizado (RDA)": ClassificadorGaussianoRegularizado(X_bayes, Y_bayes, alpha=melhor_lbd),
+    "Bayes Ingênuo (Naive Bayes)": ClassificadorBayesIngenuo(X_bayes, Y_bayes),
+    "MQO": ClassificationLinear(X_mqo, Y_mqo) 
+}
 
-# X_plot = np.hstack((
-#     np.ones((X1.size,1)),
-#     X1.flatten().reshape(X1.size,1),
-#     X2.flatten().reshape(X1.size,1)
-# ))
+classes = np.unique(Y_bayes)
+cores_plot = ['b', "#FF00BF", "#00FF40", '#5CFFFF', 'r'] 
+nomes_plot = ['Neutro', 'Sorriso', 'Sobrancelha', 'Surpreso', 'Rabugento']
 
-# y_pred  = x_novo @ W_hat
-# Y_discriminante = np.argmax(y_pred,axis=1)
-# print(nomes_classes[Y_discriminante[0]])
+fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(18, 10))
+axes = axes.flatten()
 
-# y_plot = Y_discriminante.reshape(X1.shape)
+for i, (nome_modelo, modelo) in enumerate(modelos.items()):
+    modelo.fit()
+    y_pred = modelo.predict(X_plot)
+    if nome_modelo == "MQO":
+        y_pred = np.argmax(y_pred, axis=1) + 1
+        
+    y_plot = y_pred.reshape(x1_plot.shape)
+    ax = axes[i]
+    ax.contourf(x1_plot, x2_plot, y_plot, alpha=0.4, cmap='Set3')
+    ax.contour(x1_plot, x2_plot, y_plot, colors='k', linewidths=0.5, alpha=0.5)
 
-# plt.contourf(X1, X2, y_plot, alpha=0.2, cmap='Set3')
+    for j, classe in enumerate(classes):
+        X_classe = X_bayes[Y_bayes == classe]
+        ax.scatter(X_classe[:, 0], X_classe[:, 1], c=cores_plot[j], 
+                   label=nomes_plot[j], edgecolors='k', s=40)
+        
+    ax.set_title(f"{nome_modelo}", fontsize=12, fontweight='bold')
+    ax.set_xlim(-100, 3800)
+    ax.set_ylim(-100, 4100)
+    ax.grid(True, linestyle='--', alpha=0.6)
+    if i == 0:
+        ax.legend(loc='best', fontsize='small')
 
-# plt.scatter(x_novo[0,1], x_novo[0,2], marker='*')
-# bp = 1
-# plt.xlim(-50,3800)
-# plt.ylim(-50,4100)
-# plt.legend()
-# plt.show()
+fig.suptitle('Fronteiras de Decisão dos Modelos Classificadores', fontsize=16, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+labels = []
+data_boxplot = []
+
+for model_name in results:
+    acc_values = results[model_name][model_name]["acuracia"]
+    labels.append(model_name)
+    data_boxplot.append(acc_values)
+
+plt.figure(figsize=(12, 6))
+
+box = plt.boxplot(
+    data_boxplot,
+    labels=labels,
+    patch_artist=True,
+    showmeans=True,
+    meanline=True
+)
+
+colors = ['#4C72B0', '#55A868', '#C44E52', '#8172B2', '#CCB974', '#64B5CD']
+
+for patch, color in zip(box['boxes'], colors):
+    patch.set_facecolor(color)
+
+plt.ylabel("Acurácia")
+plt.title("Distribuição das Acurácias dos Modelos (Monte Carlo - 500 Rodadas)")
+plt.ylim(0.70, 1.00)
+plt.xticks(rotation=20)
+plt.grid(True, linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
+
+bp = 1
